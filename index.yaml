@@ -1,0 +1,23 @@
+apiVersion: v1
+entries:
+  app:
+  - apiVersion: v2
+    appVersion: v1.10.2
+    created: "2026-08-22T16:45:03.746652869Z"
+    description: A minimal, hardened chart for a single-pod stateless application
+    digest: 2ce60d86f38760c3c8de65fdcf6c05cd3e76fcb79b6e53ee23b1cf674075f7df
+    home: https://mycroft.github.io/helm-charts/
+    keywords:
+    - application
+    - deployment
+    kubeVersion: '>=1.27.0-0'
+    maintainers:
+    - name: mycroft
+    name: app
+    sources:
+    - https://github.com/mycroft/helm-charts
+    type: application
+    urls:
+    - https://github.com/mycroft/helm-charts/releases/download/app-0.1.1/app-0.1.1.tgz
+    version: 0.1.1
+generated: "2026-08-22T16:45:03.7466585Z"
