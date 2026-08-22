@@ -27,10 +27,19 @@ docs: $(BIN)/helm-docs ## Regenerate chart READMEs from values.yaml
 kubeconform: $(BIN)/kubeconform ## Validate rendered manifests (K8S_VERSION=x.y.z)
 	./scripts/kubeconform.sh $(K8S_VERSION)
 
+.PHONY: docs-check
+docs-check: $(BIN)/helm-docs ## Fail if a chart README is out of date
+	@before=$$(find charts -name README.md -exec sha256sum {} + | sort); \
+	helm-docs --chart-search-root=charts --sort-values-order=file >/dev/null 2>&1; \
+	after=$$(find charts -name README.md -exec sha256sum {} + | sort); \
+	if [ "$$before" != "$$after" ]; then \
+		echo "Chart READMEs were stale; they have been regenerated — review and commit."; \
+		exit 1; \
+	fi; \
+	echo "Chart READMEs up to date."
+
 .PHONY: check
-check: lint template docs kubeconform ## Everything CI runs, minus the kind install
-	@git diff --exit-code -- charts \
-		|| { echo "Chart READMEs were stale; they have been regenerated — commit them."; exit 1; }
+check: lint template docs-check kubeconform ## Everything CI runs, minus the kind install
 
 .PHONY: clean
 clean: ## Remove downloaded tools and packaged charts
