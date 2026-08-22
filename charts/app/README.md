@@ -1,6 +1,6 @@
 # app
 
-![Version: 0.1.0](https://img.shields.io/badge/Version-0.1.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: v1.10.2](https://img.shields.io/badge/AppVersion-v1.10.2-informational?style=flat-square)
+![Version: 0.1.1](https://img.shields.io/badge/Version-0.1.1-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: v1.10.2](https://img.shields.io/badge/AppVersion-v1.10.2-informational?style=flat-square)
 
 A minimal, hardened chart for a single-pod stateless application
 
@@ -23,13 +23,17 @@ helm install my-app mycroft/app \
 Or straight from the OCI registry, no `helm repo add` needed:
 
 ```console
-helm install my-app oci://ghcr.io/mycroft/charts/app --version 0.1.0
+helm install my-app oci://ghcr.io/mycroft/charts/app --version 0.1.1
 ```
 
 ## Notes on the defaults
 
 - **`image.repository` is a placeholder** (`traefik/whoami`) so that a bare
   `helm install` works. Always override it.
+- **`args` belongs to that placeholder too.** `--port=8080` is what makes
+  `whoami` listen above 1024 so it can run as non-root. Set `args: []` when you
+  point the chart at your own image, and adjust `containerPort` and the probe
+  ports to whatever it actually listens on.
 - **No CPU limit.** Only a memory limit is set: CPU throttling degrades tail
   latency without giving the node the protection a memory limit does.
 - **`serviceAccount.automount` is `false`.** Turn it on only if the workload
@@ -63,7 +67,7 @@ Kubernetes: `>=1.27.0-0`
 | podSecurityContext | object | `{"fsGroup":65532,"runAsGroup":65532,"runAsNonRoot":true,"runAsUser":65532,"seccompProfile":{"type":"RuntimeDefault"}}` | Pod-level security context |
 | securityContext | object | `{"allowPrivilegeEscalation":false,"capabilities":{"drop":["ALL"]},"privileged":false,"readOnlyRootFilesystem":true}` | Container-level security context |
 | command | list | `[]` | Override the image entrypoint |
-| args | list | `["--port=8080"]` | Arguments passed to the container |
+| args | list | `["--port=8080"]` | Arguments passed to the container. The default belongs to the `traefik/whoami` placeholder image, not to your app: set `args: []` when you override `image.repository`, or your binary is handed an unknown flag and fails to start. |
 | containerPort | int | `8080` | Port the container listens on |
 | env | list | `[]` | Environment variables, in plain Kubernetes `EnvVar` form |
 | envFrom | list | `[]` | ConfigMaps / Secrets to load wholesale as environment variables |

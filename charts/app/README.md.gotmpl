@@ -32,6 +32,10 @@ helm install my-app oci://ghcr.io/mycroft/charts/{{ template "chart.name" . }} -
 
 - **`image.repository` is a placeholder** (`traefik/whoami`) so that a bare
   `helm install` works. Always override it.
+- **`args` belongs to that placeholder too.** `--port=8080` is what makes
+  `whoami` listen above 1024 so it can run as non-root. Set `args: []` when you
+  point the chart at your own image, and adjust `containerPort` and the probe
+  ports to whatever it actually listens on.
 - **No CPU limit.** Only a memory limit is set: CPU throttling degrades tail
   latency without giving the node the protection a memory limit does.
 - **`serviceAccount.automount` is `false`.** Turn it on only if the workload
