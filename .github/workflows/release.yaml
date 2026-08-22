@@ -29,7 +29,7 @@ jobs:
     name: Package and publish
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           # chart-releaser diffs tags against history to find new versions.
           fetch-depth: 0
@@ -57,7 +57,7 @@ jobs:
           git -C "$tmp" push origin "$PAGES_BRANCH"
           git worktree remove --force "$tmp"
 
-      - uses: azure/setup-helm@v4
+      - uses: azure/setup-helm@v5
         with:
           version: ${{ env.HELM_VERSION }}
 
