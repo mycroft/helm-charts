@@ -1,0 +1,15 @@
+# Exercises the optional Ingress and a custom port/probe surface.
+fullnameOverride: ct-ingress
+containerPort: 8000
+args:
+  - --port=8000
+service:
+  port: 8080
+ingress:
+  enabled: true
+  className: nginx
+  hosts:
+    - host: app.ct.example.com
+      paths:
+        - path: /
+          pathType: Prefix

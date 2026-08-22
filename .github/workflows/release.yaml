@@ -1,0 +1,111 @@
+name: Release Charts
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "charts/**"
+      - ".github/pages/**"
+      - ".github/workflows/release.yaml"
+  workflow_dispatch:
+
+# chart-releaser pushes GitHub Releases and commits index.yaml to gh-pages;
+# the OCI step publishes the same packages to GHCR.
+permissions:
+  contents: write
+  packages: write
+
+env:
+  HELM_VERSION: v3.19.0
+  PAGES_BRANCH: gh-pages
+
+concurrency:
+  group: release-charts
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Package and publish
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          # chart-releaser diffs tags against history to find new versions.
+          fetch-depth: 0
+
+      - name: Configure git identity
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      # chart-releaser will not create the Pages branch for you.
+      - name: Bootstrap ${{ env.PAGES_BRANCH }} if missing
+        run: |
+          if git ls-remote --exit-code --heads origin "$PAGES_BRANCH" >/dev/null 2>&1; then
+            echo "$PAGES_BRANCH already exists."
+            exit 0
+          fi
+          tmp="$(mktemp -d)"
+          git worktree add --detach "$tmp"
+          git -C "$tmp" checkout --orphan "$PAGES_BRANCH"
+          git -C "$tmp" rm -rf --quiet . || true
+          cp "$GITHUB_WORKSPACE/.github/pages/index.html" "$tmp/index.html"
+          touch "$tmp/.nojekyll"
+          git -C "$tmp" add -A
+          git -C "$tmp" commit -m "chore: initialise $PAGES_BRANCH"
+          git -C "$tmp" push origin "$PAGES_BRANCH"
+          git worktree remove --force "$tmp"
+
+      - uses: azure/setup-helm@v4
+        with:
+          version: ${{ env.HELM_VERSION }}
+
+      - name: Run chart-releaser
+        id: cr
+        uses: helm/chart-releaser-action@v1.7.0
+        with:
+          charts_dir: charts
+          pages_branch: ${{ env.PAGES_BRANCH }}
+          skip_existing: true
+        env:
+          CR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Log in to GHCR
+        if: steps.cr.outputs.changed_charts != ''
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" \
+            | helm registry login ghcr.io -u "${{ github.actor }}" --password-stdin
+
+      # Same artifacts, second distribution channel. `helm install
+      # oci://ghcr.io/<owner>/charts/<name>` needs no `helm repo add`.
+      - name: Push packages to GHCR as OCI
+        if: steps.cr.outputs.changed_charts != ''
+        run: |
+          owner="$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')"
+          shopt -s nullglob
+          packages=(.cr-release-packages/*.tgz)
+          if [ ${#packages[@]} -eq 0 ]; then
+            echo "chart-releaser reported '${{ steps.cr.outputs.changed_charts }}' but produced no packages."
+            exit 1
+          fi
+          for pkg in "${packages[@]}"; do
+            echo "Pushing $pkg -> oci://ghcr.io/${owner}/charts"
+            helm push "$pkg" "oci://ghcr.io/${owner}/charts"
+          done
+
+      - name: Sync landing page to ${{ env.PAGES_BRANCH }}
+        run: |
+          git fetch origin "$PAGES_BRANCH"
+          tmp="$(mktemp -d)"
+          git worktree add -B "$PAGES_BRANCH" "$tmp" "origin/$PAGES_BRANCH"
+          cp "$GITHUB_WORKSPACE/.github/pages/index.html" "$tmp/index.html"
+          touch "$tmp/.nojekyll"
+          git -C "$tmp" add -A
+          if git -C "$tmp" diff --cached --quiet; then
+            echo "Landing page already current."
+          else
+            git -C "$tmp" commit -m "chore: update landing page"
+            git -C "$tmp" push origin "$PAGES_BRANCH"
+          fi
+          git worktree remove --force "$tmp"

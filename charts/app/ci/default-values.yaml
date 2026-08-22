@@ -1,0 +1,2 @@
+# Exercises the chart's defaults under `ct install`.
+fullnameOverride: ct-default

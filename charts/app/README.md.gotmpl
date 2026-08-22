@@ -1,0 +1,51 @@
+# {{ template "chart.name" . }}
+
+{{ template "chart.deprecationWarning" . }}
+
+{{ template "chart.badgesSection" . }}
+
+{{ template "chart.description" . }}
+
+A deliberately small chart: one Deployment, one Service, an optional Ingress, and
+a ServiceAccount. Defaults are hardened (non-root, read-only root filesystem, all
+capabilities dropped, no service-account token mounted) and `values.schema.json`
+rejects unknown or malformed values at install time rather than producing a
+subtly broken manifest.
+
+## Install
+
+```console
+helm repo add mycroft https://mycroft.github.io/helm-charts/
+helm repo update
+helm install my-app mycroft/{{ template "chart.name" . }} \
+  --set image.repository=ghcr.io/mycroft/my-app \
+  --set image.tag=v1.2.3
+```
+
+Or straight from the OCI registry, no `helm repo add` needed:
+
+```console
+helm install my-app oci://ghcr.io/mycroft/charts/{{ template "chart.name" . }} --version {{ template "chart.version" . }}
+```
+
+## Notes on the defaults
+
+- **`image.repository` is a placeholder** (`traefik/whoami`) so that a bare
+  `helm install` works. Always override it.
+- **No CPU limit.** Only a memory limit is set: CPU throttling degrades tail
+  latency without giving the node the protection a memory limit does.
+- **`serviceAccount.automount` is `false`.** Turn it on only if the workload
+  actually calls the Kubernetes API.
+- **`readOnlyRootFilesystem: true`.** If your image writes to disk, mount an
+  `emptyDir` via `volumes`/`volumeMounts` rather than relaxing this.
+- **Probes assume an HTTP endpoint on `/`.** Point them at a real health path,
+  or set them to `{}` to disable.
+
+{{ template "chart.requirementsSection" . }}
+
+{{ template "chart.valuesSection" . }}
+
+{{ template "chart.maintainersSection" . }}
+
+---
+{{ template "helm-docs.versionFooter" . }}

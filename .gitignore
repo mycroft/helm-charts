@@ -1,0 +1,4 @@
+bin/
+.cr-release-packages/
+.cr-index/
+*.tgz
