@@ -2,7 +2,7 @@ apiVersion: v2
 name: app
 description: A minimal, hardened chart for a single-pod stateless application
 type: application
-version: 0.1.0
+version: 0.1.1
 appVersion: "v1.10.2"
 kubeVersion: ">=1.27.0-0"
 home: https://mycroft.github.io/helm-charts/

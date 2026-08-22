@@ -54,7 +54,10 @@ securityContext:
 
 # -- Override the image entrypoint
 command: []
-# -- Arguments passed to the container
+# -- Arguments passed to the container. The default belongs to the
+# `traefik/whoami` placeholder image, not to your app: set `args: []` when you
+# override `image.repository`, or your binary is handed an unknown flag and
+# fails to start.
 args:
   - --port=8080
 
